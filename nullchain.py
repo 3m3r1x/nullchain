@@ -36,7 +36,7 @@ def _fields(data, names):
 
 
 def canonical(data):
-    return json.dumps(data, sort_keys=False, separators=(",", ":"),
+    return json.dumps(data, sort_keys=True, separators=(",", ":"),
                       ensure_ascii=True, allow_nan=False).encode("ascii")
 
 
