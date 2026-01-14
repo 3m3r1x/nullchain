@@ -137,3 +137,53 @@ class Blockchain:
         self.difficulty = _integer(difficulty, "difficulty", 1, 4)
         self.blocks = [Block(0, ZERO_HASH, 0, self.difficulty, 0, ())]
         self.pending = []
+
+    def _confirmed_state(self):
+        _integer(self.difficulty, "difficulty", 1, 4)
+        genesis = Block(0, ZERO_HASH, 0, self.difficulty, 0, ())
+        if type(self.blocks) is not list or not self.blocks or self.blocks[0].index != 0:
+            raise ValueError("invalid genesis block")
+        balances, nonces = {}, {}
+        for index, block in enumerate(self.blocks[1:], 1):
+            if type(block) is not Block:
+                raise ValueError("invalid block")
+            previous = self.blocks[index - 1]
+            if block.index != index or block.previous_hash != previous.hash:
+                raise ValueError("broken block link")
+            if block.timestamp <= previous.timestamp:
+                raise ValueError("timestamps must increase")
+            if not block.hash.startswith("0" * block.difficulty):
+                raise ValueError("invalid proof of work")
+        return balances, nonces
+
+    def _pending_state(self):
+        balances, nonces = self._confirmed_state()
+        if type(self.pending) is not list or any(type(tx) is not Transaction for tx in self.pending):
+            raise ValueError("invalid pending transactions")
+        return balances, nonces
+
+    def validate(self):
+        self._pending_state()
+        return True
+
+
+
+    def mine(self, miner, timestamp=None):
+        _address(miner)
+        self._pending_state()
+        previous = self.blocks[-1]
+        if timestamp is None:
+            timestamp = max(int(time.time()), previous.timestamp + 1)
+        _integer(timestamp, "timestamp", previous.timestamp + 1)
+        reward = Transaction(COINBASE, miner, REWARD, 0)
+        transactions = (reward, *self.pending)
+        nonce = 0
+        while True:
+            block = Block(len(self.blocks), previous.hash, timestamp,
+                          self.difficulty, nonce, transactions)
+            if block.hash.startswith("0" * self.difficulty):
+                break
+            nonce += 1
+        self.blocks.append(block)
+        self.pending.clear()
+        return block

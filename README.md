@@ -10,4 +10,5 @@ from nullchain import Blockchain
 
 chain = Blockchain(difficulty=1)
 print(chain.blocks[0].hash)
+chain.mine("3m3r1x", timestamp=1)
 ```
