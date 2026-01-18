@@ -187,3 +187,32 @@ class Blockchain:
         self.blocks.append(block)
         self.pending.clear()
         return block
+
+    def to_dict(self):
+        self.validate()
+        return {"version": 1, "difficulty": self.difficulty,
+                "blocks": [dict(block.to_dict(), hash=block.hash) for block in self.blocks],
+                "pending": [tx.to_dict() for tx in self.pending]}
+
+    @classmethod
+    def from_dict(cls, data):
+        _fields(data, ("version", "difficulty", "blocks", "pending"))
+        if data["version"] != 1:
+            raise ValueError("unsupported snapshot version")
+        if type(data["blocks"]) is not list or type(data["pending"]) is not list:
+            raise ValueError("invalid snapshot lists")
+        chain = cls(data["difficulty"])
+        chain.blocks = [Block.from_dict(block) for block in data["blocks"]]
+        chain.pending = [Transaction.from_dict(tx) for tx in data["pending"]]
+        chain.validate()
+        return chain
+
+    def save(self, path):
+        path = Path(path)
+        text = json.dumps(self.to_dict(), sort_keys=True, indent=2) + "\n"
+        path.write_text(text, encoding="utf-8")
+
+    @classmethod
+    def load(cls, path):
+        data = json.loads(Path(path).read_text(encoding="utf-8"))
+        return cls.from_dict(data)
