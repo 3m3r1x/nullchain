@@ -154,6 +154,14 @@ class Blockchain:
                 raise ValueError("timestamps must increase")
             if not block.hash.startswith("0" * block.difficulty):
                 raise ValueError("invalid proof of work")
+            if not block.transactions:
+                raise ValueError("missing mining reward")
+            reward = block.transactions[0]
+            if reward.sender != COINBASE or reward.amount != REWARD or reward.nonce != 0:
+                raise ValueError("invalid mining reward")
+            balances[reward.recipient] = balances.get(reward.recipient, 0) + REWARD
+            for tx in block.transactions[1:]:
+                _apply(tx, balances, nonces)
         return balances, nonces
 
     def _pending_state(self):
@@ -166,6 +174,10 @@ class Blockchain:
         self._pending_state()
         return True
 
+    def balance(self, address):
+        _address(address)
+        balances, _ = self._confirmed_state()
+        return balances.get(address, 0)
 
 
     def mine(self, miner, timestamp=None):
