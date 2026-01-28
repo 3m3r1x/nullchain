@@ -168,6 +168,8 @@ class Blockchain:
         balances, nonces = self._confirmed_state()
         if type(self.pending) is not list or any(type(tx) is not Transaction for tx in self.pending):
             raise ValueError("invalid pending transactions")
+        for tx in self.pending:
+            _apply(tx, balances, nonces)
         return balances, nonces
 
     def validate(self):
