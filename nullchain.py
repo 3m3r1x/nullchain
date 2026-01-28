@@ -179,6 +179,16 @@ class Blockchain:
         balances, _ = self._confirmed_state()
         return balances.get(address, 0)
 
+    def add_transaction(self, sender, recipient, amount, nonce=None):
+        _address(sender)
+        _address(recipient)
+        balances, nonces = self._pending_state()
+        if nonce is None:
+            nonce = nonces.get(sender, 0)
+        tx = Transaction(sender, recipient, amount, nonce)
+        _apply(tx, balances, nonces)
+        self.pending.append(tx)
+        return tx
 
     def mine(self, miner, timestamp=None):
         _address(miner)
