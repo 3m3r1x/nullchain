@@ -141,7 +141,7 @@ class Blockchain:
     def _confirmed_state(self):
         _integer(self.difficulty, "difficulty", 1, 4)
         genesis = Block(0, ZERO_HASH, 0, self.difficulty, 0, ())
-        if type(self.blocks) is not list or not self.blocks or self.blocks[0].index != 0:
+        if type(self.blocks) is not list or not self.blocks or self.blocks[0] != genesis:
             raise ValueError("invalid genesis block")
         balances, nonces = {}, {}
         for index, block in enumerate(self.blocks[1:], 1):
@@ -152,7 +152,9 @@ class Blockchain:
                 raise ValueError("broken block link")
             if block.timestamp <= previous.timestamp:
                 raise ValueError("timestamps must increase")
-            if not block.hash.startswith("0" * block.difficulty):
+            if block.difficulty != self.difficulty:
+                raise ValueError("block difficulty does not match chain")
+            if not block.hash.startswith("0" * self.difficulty):
                 raise ValueError("invalid proof of work")
             if not block.transactions:
                 raise ValueError("missing mining reward")
