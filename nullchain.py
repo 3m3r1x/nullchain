@@ -161,9 +161,9 @@ class Blockchain:
             reward = block.transactions[0]
             if reward.sender != COINBASE or reward.amount != REWARD or reward.nonce != 0:
                 raise ValueError("invalid mining reward")
-            balances[reward.recipient] = balances.get(reward.recipient, 0) + REWARD
             for tx in block.transactions[1:]:
                 _apply(tx, balances, nonces)
+            balances[reward.recipient] = balances.get(reward.recipient, 0) + REWARD
         return balances, nonces
 
     def _pending_state(self):
