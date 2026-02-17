@@ -19,7 +19,7 @@ MAX_AMOUNT = (1 << 63) - 1
 
 
 def _integer(value, name, minimum=0, maximum=MAX_AMOUNT):
-    if not isinstance(value, int) or not minimum <= value <= maximum:
+    if type(value) is not int or not minimum <= value <= maximum:
         raise ValueError(f"invalid {name}")
     return value
 
@@ -31,7 +31,7 @@ def _address(value):
 
 
 def _fields(data, names):
-    if type(data) is not dict or not set(names).issubset(data):
+    if type(data) is not dict or set(data) != set(names):
         raise ValueError("invalid record fields")
 
 
@@ -223,7 +223,7 @@ class Blockchain:
     @classmethod
     def from_dict(cls, data):
         _fields(data, ("version", "difficulty", "blocks", "pending"))
-        if data["version"] != 1:
+        if type(data["version"]) is not int or data["version"] != 1:
             raise ValueError("unsupported snapshot version")
         if type(data["blocks"]) is not list or type(data["pending"]) is not list:
             raise ValueError("invalid snapshot lists")
@@ -240,5 +240,5 @@ class Blockchain:
 
     @classmethod
     def load(cls, path):
-        data = json.loads(Path(path).read_text(encoding="utf-8"))
+        data = json.loads(Path(path).read_text(encoding="utf-8"), object_pairs_hook=_unique_fields)
         return cls.from_dict(data)
