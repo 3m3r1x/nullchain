@@ -236,7 +236,18 @@ class Blockchain:
     def save(self, path):
         path = Path(path)
         text = json.dumps(self.to_dict(), sort_keys=True, indent=2) + "\n"
-        path.write_text(text, encoding="utf-8")
+        temporary = None
+        try:
+            with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=path.parent,
+                                             prefix=f".{path.name}.", delete=False) as stream:
+                temporary = Path(stream.name)
+                stream.write(text)
+                stream.flush()
+                os.fsync(stream.fileno())
+            os.replace(temporary, path)
+        finally:
+            if temporary is not None and temporary.exists():
+                temporary.unlink()
 
     @classmethod
     def load(cls, path):
