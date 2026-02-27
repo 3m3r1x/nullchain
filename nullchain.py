@@ -253,3 +253,52 @@ class Blockchain:
     def load(cls, path):
         data = json.loads(Path(path).read_text(encoding="utf-8"), object_pairs_hook=_unique_fields)
         return cls.from_dict(data)
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description="NULLCHAIN local ledger")
+    commands = parser.add_subparsers(dest="action", required=True)
+    for action in ("init", "mine", "send", "balance", "verify", "show"):
+        command = commands.add_parser(action)
+        command.add_argument("file", type=Path)
+        if action == "init":
+            command.add_argument("--difficulty", type=int, default=2)
+        elif action == "mine":
+            command.add_argument("--miner", required=True)
+        elif action == "send":
+            command.add_argument("--sender", required=True)
+            command.add_argument("--to", required=True)
+            command.add_argument("--amount", type=int, required=True)
+            command.add_argument("--nonce", type=int)
+        elif action == "balance":
+            command.add_argument("address")
+    args = parser.parse_args(argv)
+    try:
+        if args.action == "init":
+            if args.file.exists():
+                raise ValueError("ledger already exists")
+            Blockchain(args.difficulty).save(args.file)
+        else:
+            chain = Blockchain.load(args.file)
+            if args.action == "mine":
+                print(chain.mine(args.miner).hash)
+                chain.save(args.file)
+            elif args.action == "send":
+                tx = chain.add_transaction(args.sender, args.to, args.amount, args.nonce)
+                chain.save(args.file)
+                print(tx.id)
+            elif args.action == "balance":
+                print(chain.balance(args.address))
+            elif args.action == "verify":
+                chain.validate()
+                print("valid")
+            else:
+                print(json.dumps(chain.to_dict(), sort_keys=True, indent=2))
+    except (ValueError, OSError, TypeError, KeyError) as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 2
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
